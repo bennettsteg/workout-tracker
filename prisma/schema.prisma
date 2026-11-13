@@ -10,4 +10,108 @@ datasource db {
   provider = "postgresql"
 }
 
-// Models land here in the domain-layer ticket (#3).
+// A library entry: a lift the user has set up once, re-used across templates and sessions.
+model Exercise {
+  id        String   @id @default(cuid())
+  name      String
+  category  String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  loggedExercises   LoggedExercise[]
+  templateExercises TemplateExercise[]
+
+  @@index([name])
+}
+
+// One gym visit. May reference the Template it was started from, purely for display/
+// provenance - its LoggedExercises/Sets are independent data, never a live view of the
+// Template's current definition, so editing or deleting that Template never changes this.
+model WorkoutSession {
+  id         String    @id @default(cuid())
+  startedAt  DateTime  @default(now())
+  templateId String?
+  createdAt  DateTime  @default(now())
+
+  template        Template?        @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  loggedExercises LoggedExercise[]
+
+  @@index([startedAt])
+  @@index([templateId])
+}
+
+// One Exercise logged within a WorkoutSession. `order` preserves the order exercises were
+// added to the session. When started from a Template, target* is a snapshot of that
+// TemplateExercise's targets taken at creation time (for UI pre-fill) - never a live
+// reference, so later edits to the Template never change an already-logged session.
+model LoggedExercise {
+  id           String @id @default(cuid())
+  sessionId    String
+  exerciseId   String
+  order        Int
+  targetSets   Int?
+  targetReps   Int?
+  targetWeight Float?
+
+  session  WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise Exercise       @relation(fields: [exerciseId], references: [id])
+  sets     Set[]
+
+  @@index([sessionId])
+  @@index([exerciseId])
+}
+
+// One set actually performed: independent reps and weight (lbs). `order` preserves set
+// order within its LoggedExercise.
+model Set {
+  id               String @id @default(cuid())
+  loggedExerciseId String
+  order            Int
+  reps             Int
+  weight           Float
+
+  loggedExercise LoggedExercise @relation(fields: [loggedExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([loggedExerciseId])
+}
+
+// A reusable, named, ordered list of Exercises. Editing/deleting a Template never alters
+// WorkoutSessions already logged from it (see WorkoutSession above).
+model Template {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  exercises TemplateExercise[]
+  sessions  WorkoutSession[]
+
+  @@index([name])
+}
+
+// Join of Template/Exercise: `order` within the Template, plus optional targets that
+// pre-fill (but never constrain) a session started from this Template.
+model TemplateExercise {
+  id           String @id @default(cuid())
+  templateId   String
+  exerciseId   String
+  order        Int
+  targetSets   Int?
+  targetReps   Int?
+  targetWeight Float?
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([templateId])
+  @@index([exerciseId])
+}
+
+// One body weight reading (lbs), logged whenever the user weighs in - no schedule.
+model BodyWeightEntry {
+  id        String   @id @default(cuid())
+  date      DateTime
+  weight    Float
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
