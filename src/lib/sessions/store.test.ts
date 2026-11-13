@@ -10,6 +10,7 @@ import {
   getSessionDetail,
   listSessions,
   logSet,
+  removeExerciseFromSession,
   startSession,
   updateSet,
 } from "./store";
@@ -43,6 +44,7 @@ describe("startSession", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.session.templateId).toBeNull();
+    expect(result.session.templateName).toBeNull();
     expect(result.session.loggedExercises).toHaveLength(1);
     expect(result.session.loggedExercises[0]).toMatchObject({
       exerciseId: bench.id,
@@ -77,6 +79,7 @@ describe("startSession", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.session.templateId).toBe(template.template.id);
+    expect(result.session.templateName).toBe(`${NAME_PREFIX} Push Day`);
     expect(result.session.loggedExercises.map((le) => le.exerciseId)).toEqual([bench.id, row.id]);
     expect(result.session.loggedExercises[0]).toMatchObject({
       targetSets: 3,
@@ -142,6 +145,37 @@ describe("addExerciseToSession", () => {
     const bench = await makeExercise("Bench");
 
     const result = await addExerciseToSession("does-not-exist", bench.id);
+
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe("removeExerciseFromSession", () => {
+  it("removes a LoggedExercise (and its sets) from a session, leaving the others", async () => {
+    const bench = await makeExercise("Bench");
+    const squat = await makeExercise("Squat");
+    const started = await startSession({ exerciseId: bench.id });
+    if (!started.ok) throw new Error("setup failed");
+    const added = await addExerciseToSession(started.session.id, squat.id);
+    if (!added.ok) throw new Error("setup failed");
+    const squatLoggedExerciseId = added.session.loggedExercises[1].id;
+    const benchLoggedExerciseId = added.session.loggedExercises[0].id;
+    await prisma.set.create({ data: { loggedExerciseId: squatLoggedExerciseId, order: 0, reps: 5, weight: 225 } });
+
+    const result = await removeExerciseFromSession(started.session.id, squatLoggedExerciseId);
+
+    expect(result.ok).toBe(true);
+    const detail = await getSessionDetail(started.session.id);
+    expect(detail?.loggedExercises.map((le) => le.id)).toEqual([benchLoggedExerciseId]);
+    expect(await prisma.set.count({ where: { loggedExerciseId: squatLoggedExerciseId } })).toBe(0);
+  });
+
+  it("reports an error for a LoggedExercise that no longer exists", async () => {
+    const bench = await makeExercise("Bench");
+    const started = await startSession({ exerciseId: bench.id });
+    if (!started.ok) throw new Error("setup failed");
+
+    const result = await removeExerciseFromSession(started.session.id, "does-not-exist");
 
     expect(result.ok).toBe(false);
   });

@@ -1,9 +1,13 @@
-import { Dumbbell, Plus } from "lucide-react";
+import { Dumbbell, Play, Plus } from "lucide-react";
 
 import { ExerciseFormDialog } from "@/components/exercises/ExerciseFormDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { listExercises } from "@/lib/exercises/store";
+import { startSessionFromExercise } from "@/server-actions/session-actions";
+
+// Always reflects the current library; never worth prerendering/caching for a single user.
+export const dynamic = "force-dynamic";
 
 export default async function ExercisesPage() {
   const exercises = await listExercises();
@@ -40,15 +44,22 @@ export default async function ExercisesPage() {
                     {exercise.notes && <p className="mt-1 text-sm text-muted-foreground">{exercise.notes}</p>}
                   </div>
                 </div>
-                <ExerciseFormDialog
-                  exercise={{
-                    id: exercise.id,
-                    name: exercise.name,
-                    category: exercise.category ?? "",
-                    notes: exercise.notes ?? "",
-                  }}
-                  trigger={<Button variant="outline">Edit</Button>}
-                />
+                <div className="flex items-center gap-2">
+                  <form action={startSessionFromExercise.bind(null, exercise.id)}>
+                    <Button type="submit" variant="outline">
+                      <Play /> Log
+                    </Button>
+                  </form>
+                  <ExerciseFormDialog
+                    exercise={{
+                      id: exercise.id,
+                      name: exercise.name,
+                      category: exercise.category ?? "",
+                      notes: exercise.notes ?? "",
+                    }}
+                    trigger={<Button variant="outline">Edit</Button>}
+                  />
+                </div>
               </CardContent>
             </Card>
           ))}

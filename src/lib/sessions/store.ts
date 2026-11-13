@@ -23,6 +23,7 @@ export type SessionDetail = {
   id: string;
   startedAt: Date;
   templateId: string | null;
+  templateName: string | null;
   loggedExercises: LoggedExerciseDetail[];
 };
 
@@ -31,6 +32,7 @@ export type StartSessionInput = { exerciseId: string } | { templateId: string };
 export type SessionResult = { ok: true; session: SessionDetail } | { ok: false; error: string };
 
 const sessionInclude = {
+  template: true,
   loggedExercises: {
     orderBy: { order: "asc" as const },
     include: { exercise: true, sets: { orderBy: { order: "asc" as const } } },
@@ -41,6 +43,7 @@ function mapSession(session: {
   id: string;
   startedAt: Date;
   templateId: string | null;
+  template: { name: string } | null;
   loggedExercises: Array<{
     id: string;
     exerciseId: string;
@@ -56,6 +59,7 @@ function mapSession(session: {
     id: session.id,
     startedAt: session.startedAt,
     templateId: session.templateId,
+    templateName: session.template?.name ?? null,
     loggedExercises: session.loggedExercises.map((le) => ({
       id: le.id,
       exerciseId: le.exerciseId,
@@ -126,6 +130,23 @@ export async function addExerciseToSession(
   } catch {
     return { ok: false, error: "That session no longer exists." };
   }
+}
+
+/** Removes a LoggedExercise (and its sets) from a session. */
+export async function removeExerciseFromSession(
+  sessionId: string,
+  loggedExerciseId: string,
+): Promise<SessionResult> {
+  try {
+    await prisma.loggedExercise.delete({ where: { id: loggedExerciseId, sessionId } });
+  } catch {
+    return { ok: false, error: "That logged exercise no longer exists." };
+  }
+  const session = await prisma.workoutSession.findUniqueOrThrow({
+    where: { id: sessionId },
+    include: sessionInclude,
+  });
+  return { ok: true, session: mapSession(session) };
 }
 
 export type SetInput = { reps: number; weight: number };

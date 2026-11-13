@@ -1,4 +1,4 @@
-import { ClipboardList, Plus } from "lucide-react";
+import { ClipboardList, Play, Plus } from "lucide-react";
 
 import { DeleteTemplateButton } from "@/components/templates/DeleteTemplateButton";
 import { exerciseName } from "@/components/templates/exerciseOptions";
@@ -7,6 +7,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { listExercises } from "@/lib/exercises/store";
 import { listTemplates } from "@/lib/templates/store";
+import { startSessionFromTemplate } from "@/server-actions/session-actions";
+
+// Always reflects the current library; never worth prerendering/caching for a single user.
+export const dynamic = "force-dynamic";
 
 export default async function TemplatesPage() {
   const [templates, exercises] = await Promise.all([listTemplates(), listExercises()]);
@@ -49,6 +53,11 @@ export default async function TemplatesPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  <form action={startSessionFromTemplate.bind(null, template.id)}>
+                    <Button type="submit" variant="outline">
+                      <Play /> Start Session
+                    </Button>
+                  </form>
                   <TemplateFormDialog
                     exercises={exerciseOptions}
                     template={{
