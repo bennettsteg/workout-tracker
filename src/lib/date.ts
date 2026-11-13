@@ -7,3 +7,13 @@
 export function formatCalendarDate(date: Date): string {
   return date.toLocaleDateString(undefined, { timeZone: "UTC" });
 }
+
+/**
+ * Formats a real instant (e.g. WorkoutSession.startedAt) as a calendar date in the viewer's own
+ * timezone - the opposite of formatCalendarDate, which is for values with no time-of-day.
+ * Converting through the local timezone is exactly the right behavior here: a session logged
+ * late at night should show as that night's date, not UTC's.
+ */
+export function formatInstantDate(date: Date): string {
+  return date.toLocaleDateString();
+}
