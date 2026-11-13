@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#18181b" />
+    <title>Can't reach Workout Tracker</title>
+    <style>
+      /*
+       * Self-contained on purpose: the service worker serves this page when the server is
+       * unreachable, so it can't depend on the app's hashed CSS or fonts. The colours below
+       * mirror the theme tokens in src/app/globals.css; keep them in sync by hand.
+       */
+      :root {
+        --background: #18181b;
+        --card: #212124;
+        --border: #313135;
+        --foreground: #fafafa;
+        --muted-foreground: #a1a1aa;
+        --primary: #f97316;
+        --ring: #fb923c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right))
+          max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
+        background: var(--background);
+        color: var(--foreground);
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        width: 100%;
+        max-width: 26rem;
+        padding: 2rem 1.75rem;
+        text-align: center;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 1rem;
+      }
+      .logo {
+        width: 3.5rem;
+        height: 3.5rem;
+        margin: 0 auto 1.25rem;
+        display: block;
+      }
+      h1 {
+        margin: 0 0 0.75rem;
+        font-size: 1.5rem;
+        line-height: 1.25;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        color: var(--muted-foreground);
+        font-size: 0.95rem;
+        line-height: 1.5;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        color: #1c1200;
+        background: var(--primary);
+        border: 0;
+        border-radius: 0.625rem;
+        padding: 0.7rem 1.4rem;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 2px solid var(--ring);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- Inline (not an <img>) so it renders even though nothing else is cached. -->
+      <svg class="logo" viewBox="0 0 56 56" role="img" aria-label="Workout Tracker">
+        <rect width="56" height="56" rx="12" fill="#f97316" />
+        <g stroke="#1c1200" stroke-width="3.2" stroke-linecap="round">
+          <line x1="12" y1="28" x2="44" y2="28" />
+          <line x1="16" y1="20" x2="16" y2="36" />
+          <line x1="40" y1="20" x2="40" y2="36" />
+          <line x1="10" y1="23" x2="10" y2="33" />
+          <line x1="46" y1="23" x2="46" y2="33" />
+        </g>
+      </svg>
+      <h1>Can't reach Workout Tracker, is Tailscale on?</h1>
+      <p>
+        Workout Tracker only loads while your device is connected to your Tailscale network.
+        Turn Tailscale on, then try again.
+      </p>
+      <button type="button" id="retry">Try again</button>
+    </main>
+    <script>
+      document.getElementById("retry").addEventListener("click", function () {
+        location.reload();
+      });
+      // Reload on its own as soon as the device regains a connection.
+      window.addEventListener("online", function () {
+        location.reload();
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,33 @@
+services:
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: builder
+    command: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    networks:
+      - database-network
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: runner
+    restart: unless-stopped
+    ports:
+      # Loopback only: the app has no login, so it must not be reachable on the LAN or
+      # the internet. Host-installed Tailscale exposes it to the tailnet (tailscale serve).
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    networks:
+      - database-network
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+networks:
+  database-network:
+    external: true
