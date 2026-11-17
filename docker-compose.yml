@@ -19,7 +19,7 @@ services:
     ports:
       # Loopback only: the app has no login, so it must not be reachable on the LAN or
       # the internet. Host-installed Tailscale exposes it to the tailnet (tailscale serve).
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3002:3000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
     networks:
